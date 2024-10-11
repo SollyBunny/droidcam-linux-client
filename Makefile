@@ -11,70 +11,72 @@
 # Example:
 #  APPINDICATOR=ayatana-appindicator3-0.1 make droidcam
 
+UNAME_S = $(shell uname -s)
 
-CC           ?= gcc
-CFLAGS       ?=
-APPINDICATOR ?= appindicator3-0.1
-USBMUXD      ?= libusbmuxd
-
-GTK   = `pkg-config --libs --cflags gtk+-3.0` `pkg-config --libs x11`
-GTK  += `pkg-config --libs --cflags $(APPINDICATOR)`
-LIBAV = `pkg-config --libs --cflags libswscale libavutil`
-JPEG  = `pkg-config --libs --cflags libturbojpeg`
-USBMUXD := `pkg-config --libs --cflags $(USBMUXD)`
-
-LIBS  = -lspeex -lasound -lpthread -lm
-SRC   = src/connection.c src/settings.c src/decoder*.c src/av.c src/usb.c src/queue.c
-
-ifneq ($(findstring ayatana,$(APPINDICATOR)),)
-	CFLAGS += -DUSE_AYATANA_APPINDICATOR
-endif
-
-UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),FreeBSD)
-	CC          ?= $(shell pkg info | grep -o '^gcc[0-9]*' | head -n 1)
-	JPEG_DIR     = /usr/local
-	JPEG_INCLUDE = $(JPEG_DIR)/include
-	JPEG_LIB     = $(JPEG_DIR)/lib
-	USBMUXD      = -lusbmuxd-2.0
+	CC       ?= gcc
+else
+	CC       ?= $(shell pkg info | grep -o '^gcc[0-9]*' | head -n 1)
 endif
 
-all: droidcam-cli droidcam
+CLI          ?= 0
+APPINDICATOR ?= appindicator3-0.1
+USBMUXD      ?= libusbmuxd # Leave empty for disable
+CFLAGS       ?= -Wall -O2
 
-ifeq "$(RELEASE)" ""
-package:
-	@echo "usage: RELEASE=2. make -B package"
+SRC     = src/connection.c src/settings.c src/decoder*.c src/av.c src/usb.c src/queue.c
+LDFLAGS = -lspeex -lasound -lpthread -lm
 
+# libav / libswscale
+CFLAGS  += `pkg-config --cflags libswscale libavutil`
+LDFLAGS += `pkg-config --libs libswscale libavutil`
+LDFLAGS += -L/opt/ffmpeg4/lib -lswscale -lavutil
+
+# libturbojpeg
+CFLAGS  += `pkg-config --cflags libturbojpeg`
+CFLAGS  += -I/opt/libjpeg-turbo/include
+LDFLAGS += `pkg-config --libs libturbojpeg`
+
+# USBMUXD
+ifeq ($(USBMUXD),)
+	CFLAGS  += "-DNOUSBMUXD"
 else
-CFLAGS += -Wall -O2
+	CFLAGS  += `pkg-config --cflags $(USBMUXD)`
+	CFLAGS  += -I/opt/libimobiledevice/include
+	LDFLAGS += `pkg-config --libs $(USBMUXD)`
+endif
 
-JPEG    = -I/opt/libjpeg-turbo/include
-USBMUXD = -I/opt/libimobiledevice/include
-LIBAV   = -L/opt/ffmpeg4/lib -lswscale -lavutil
+ifeq ($(CLI),0)
+	SRC     += src/droidcam.c src/resources.c
+	# GTK
+	CFLAGS  += `pkg-config --cflags gtk+-3.0`
+	LDFLAGS += `pkg-config --lib gtk+-3.0` `pkg-config --libs x11`
+	# App Indicator
+	CFLAGS  += `pkg-config --cflags $(APPINDICATOR)`
+	LDFLAGS += `pkg-config --libs $(APPINDICATOR)`
+ifneq ($(findstring ayatana,$(APPINDICATOR)),)
+	CFLAGS  += -DUSE_AYATANA_APPINDICATOR
+endif
+else
+	SRC     += src/droidcam-cli.c
+endif
 
-SRC += /opt/libimobiledevice/lib/libusbmuxd.a
-SRC += /opt/libimobiledevice/lib/libplist-2.0.a
-SRC += /opt/libjpeg-turbo/lib64/libturbojpeg.a
+all:
+	make build $(MAKECMDGOALS) CLI=0
+	make build $(MAKECMDGOALS) CLI=1
 
-.PHONY: package
+build: $(SRC)
+	$(CC) $(CFLAGS) $^ -o $@ $(SRC) $(LDFLAGS) $(CFLAGS)
+
+package: LDFLAGS += "/opt/libjpeg-turbo/lib64/libturbojpeg.a /opt/libimobiledevice/lib/libusbmuxd.a /opt/libimobiledevice/lib/libplist-2.0.a"
 package: all
 	zip "droidcam_$(RELEASE).zip" \
 		LICENSE README* icon2.png  \
 		droidcam* install* uninstall* \
 		v4l2loopback/*
-endif
 
 #src/resources.c: .gresource.xml icon2.png
 #	glib-compile-resources .gresource.xml --generate-source --target=src/resources.c
-
-droidcam-cli: LDLIBS +=        $(LIBAV) $(JPEG) $(USBMUXD) $(LIBS)
-droidcam:     LDLIBS += $(GTK) $(LIBAV) $(JPEG) $(USBMUXD) $(LIBS)
-
-droidcam-cli: src/droidcam-cli.c $(SRC)
-	$(CC) $(CPPFLAGS) $(CFLAGS) $^ -o $@ $(LDFLAGS) $(LDLIBS)
-
-droidcam: src/droidcam.c src/resources.c $(SRC)
-	$(CC) $(CPPFLAGS) $(CFLAGS) $^ -o $@ $(LDFLAGS) $(LDLIBS)
 
 clean:
 	rm -f droidcam
