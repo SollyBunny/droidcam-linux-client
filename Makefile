@@ -15,13 +15,11 @@
 CC           ?= gcc
 CFLAGS       ?=
 APPINDICATOR ?= appindicator3-0.1
-USBMUXD      ?= libusbmuxd
 
 GTK   = `pkg-config --libs --cflags gtk+-3.0` `pkg-config --libs x11`
 GTK  += `pkg-config --libs --cflags $(APPINDICATOR)`
 LIBAV = `pkg-config --libs --cflags libswscale libavutil`
 JPEG  = `pkg-config --libs --cflags libturbojpeg`
-USBMUXD := `pkg-config --libs --cflags $(USBMUXD)`
 
 LIBS  = -lspeex -lasound -lpthread -lm
 SRC   = src/connection.c src/settings.c src/decoder*.c src/av.c src/usb.c src/queue.c
@@ -36,7 +34,6 @@ ifeq ($(UNAME_S),FreeBSD)
 	JPEG_DIR     = /usr/local
 	JPEG_INCLUDE = $(JPEG_DIR)/include
 	JPEG_LIB     = $(JPEG_DIR)/lib
-	USBMUXD      = -lusbmuxd-2.0
 endif
 
 all: droidcam-cli droidcam
@@ -46,13 +43,11 @@ package:
 	@echo "usage: RELEASE=2. make -B package"
 
 else
-CFLAGS += -Wall -O2
+CFLAGS += -Wall -O4
 
 JPEG    = -I/opt/libjpeg-turbo/include
-USBMUXD = -I/opt/libimobiledevice/include
 LIBAV   = -L/opt/ffmpeg4/lib -lswscale -lavutil
 
-SRC += /opt/libimobiledevice/lib/libusbmuxd.a
 SRC += /opt/libimobiledevice/lib/libplist-2.0.a
 SRC += /opt/libjpeg-turbo/lib64/libturbojpeg.a
 
@@ -67,8 +62,8 @@ endif
 #src/resources.c: .gresource.xml icon2.png
 #	glib-compile-resources .gresource.xml --generate-source --target=src/resources.c
 
-droidcam-cli: LDLIBS +=        $(LIBAV) $(JPEG) $(USBMUXD) $(LIBS)
-droidcam:     LDLIBS += $(GTK) $(LIBAV) $(JPEG) $(USBMUXD) $(LIBS)
+droidcam-cli: LDLIBS +=        $(LIBAV) $(JPEG) $(LIBS)
+droidcam:     LDLIBS += $(GTK) $(LIBAV) $(JPEG) $(LIBS)
 
 droidcam-cli: src/droidcam-cli.c $(SRC)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $^ -o $@ $(LDFLAGS) $(LDLIBS)

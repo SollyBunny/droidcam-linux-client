@@ -164,12 +164,6 @@ static void Start(void) {
 			return;
 		}
 		ip = ADB_LOCALHOST_IP;
-	} else if (g_settings.connection == CB_RADIO_IOS) {
-		s = CheckiOSDevices(port);
-		if (s <= 0) {
-			iOSErrorPrint(s);
-			return;
-		}
 	} else if (g_settings.connection == CB_RADIO_WIFI) {
 		ip = (char*)gtk_entry_get_text(ipEntry);
 	} else {
@@ -282,11 +276,6 @@ _up:
 		break;
 		case CB_RADIO_ADB:
 			g_settings.connection = CB_RADIO_ADB;
-			text = "Connect";
-			ipEdit = FALSE;
-		break;
-		case CB_RADIO_IOS:
-			g_settings.connection = CB_RADIO_IOS;
 			text = "Connect";
 			ipEdit = FALSE;
 		break;
@@ -580,10 +569,6 @@ int main(int argc, char *argv[])
 	radios[CB_RADIO_ADB] = gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radios[CB_WIFI_SRVR]), "USB (Android)");
 	g_signal_connect(radios[CB_RADIO_ADB], "toggled", G_CALLBACK(the_callback), (gpointer)CB_RADIO_ADB);
 	gtk_grid_attach_next_to(GTK_GRID(radioGroup), radios[CB_RADIO_ADB], radios[CB_WIFI_SRVR], GTK_POS_BOTTOM, 1, 1);
-
-	radios[CB_RADIO_IOS] = gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(radios[CB_RADIO_ADB]), "USB (iOS)");
-	g_signal_connect(radios[CB_RADIO_IOS], "toggled", G_CALLBACK(the_callback), (gpointer)CB_RADIO_IOS);
-	gtk_grid_attach_next_to(GTK_GRID(radioGroup), radios[CB_RADIO_IOS], radios[CB_RADIO_ADB], GTK_POS_BOTTOM, 1, 1);
 
 	// Add toggle button to enable video as 2nd element of left column.
 	widget = gtk_check_button_new_with_label("Enable Video");

@@ -5,7 +5,6 @@
 enum radios {
     CB_RADIO_WIFI,
     CB_RADIO_ADB,
-    CB_RADIO_IOS,
     CB_WIFI_SRVR,
     CB_RADIO_COUNT
 };
@@ -61,10 +60,8 @@ void SaveSettings(struct settings* settings);
 #define ERROR_DEVICE_OFFLINE  -4
 #define ERROR_DEVICE_NOTAUTH  -5
 int CheckAdbDevices(int port);
-int CheckiOSDevices(int port);
 
 void AdbErrorPrint(int rc);
-void iOSErrorPrint(int rc);
 
 void UpdateBatteryLabel(char *battery_value);
 

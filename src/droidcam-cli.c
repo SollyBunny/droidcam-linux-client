@@ -67,9 +67,6 @@ static inline void usage(__attribute__((__unused__)) int argc, char *argv[]) {
     "   Connect via adb to Android device with serial number <serial>\n"
     "   (use `adb devices` to find serial number)\n"
     "\n"
-    " %s [options] ios <port>\n"
-    "   Connect via usbmuxd to iDevice\n"
-    "\n"
     "Options:\n"
     " -a          Enable Audio\n"
     " -v          Enable Video\n"
@@ -155,9 +152,6 @@ static void parse_args(int argc, char *argv[]) {
             g_settings.connection = CB_RADIO_ADB;
             memset(g_settings.ip, 0, sizeof(g_settings.ip));
             strncpy(g_settings.ip, ADB_LOCALHOST_IP, sizeof(g_settings.ip));
-        }
-        else if (strcmp(g_settings.ip, "ios") == 0) {
-            g_settings.connection = CB_RADIO_IOS;
         }
         else {
             g_settings.connection = CB_RADIO_WIFI;
@@ -245,7 +239,7 @@ int main(int argc, char *argv[]) {
     if (v_running) {
         printf("Video: %s\n", v4l2_device);
         SOCKET videoSocket = INVALID_SOCKET;
-        if (g_settings.connection == CB_RADIO_WIFI || g_settings.connection == CB_RADIO_ADB || g_settings.connection == CB_RADIO_IOS) {
+        if (g_settings.connection == CB_RADIO_WIFI || g_settings.connection == CB_RADIO_ADB) {
 
             if (g_settings.connection == CB_RADIO_ADB) {
                 int rc = CheckAdbDevices(g_settings.port);
@@ -255,14 +249,6 @@ int main(int argc, char *argv[]) {
                 }
             }
 
-            if (g_settings.connection == CB_RADIO_IOS) {
-                int rc = CheckiOSDevices(g_settings.port);
-                if (rc <= 0) {
-                    iOSErrorPrint(rc);
-                    return 1;
-                }
-                videoSocket = rc;
-            }
             else {
                 char *errmsg = NULL;
                 videoSocket = Connect(g_settings.ip, g_settings.port, &errmsg);

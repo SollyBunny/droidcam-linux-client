@@ -25,12 +25,7 @@ SOCKET GetConnection(void) {
     char *err;
     SOCKET socket = INVALID_SOCKET;
 
-    if (g_settings.connection == CB_RADIO_IOS) {
-        socket = CheckiOSDevices(g_settings.port);
-        if (socket <= 0) socket = INVALID_SOCKET;
-    } else {
-        socket = Connect(g_settings.ip, g_settings.port, &err);
-    }
+    socket = Connect(g_settings.ip, g_settings.port, &err);
 
     return socket;
 }
@@ -218,8 +213,6 @@ void *AudioThreadProc(void *arg) {
         if (!a_running) return 0;
     }
 
-    if (g_settings.connection == CB_RADIO_IOS)
-        goto TCP_ONLY;
     if (strncmp(g_settings.ip, ADB_LOCALHOST_IP, CSTR_LEN(ADB_LOCALHOST_IP)) == 0)
         goto TCP_ONLY;
 
